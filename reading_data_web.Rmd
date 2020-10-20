@@ -111,6 +111,7 @@ jsonlite::fromJSON() %>% # make it looks like a df
 ```
 
 ## BRFESS
+
 ```{r}
 brfss_smart2010 = 
   GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv",
@@ -118,3 +119,20 @@ brfss_smart2010 =
   content("parsed")
 ```
 
+## Some data aren't so nice
+
+Let's look at Pokemon ...
+
+```{r}
+poke = 
+  GET("http://pokeapi.co/api/v2/pokemon/1") %>%
+  content()
+
+poke$name
+poke$height
+poke$abilities
+```
+
+## Be reasonable
+
+You may create a new rmd file, and process the data from another rmd focus only on pulling in data. 

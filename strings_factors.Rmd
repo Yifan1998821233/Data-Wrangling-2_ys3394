@@ -112,7 +112,7 @@ factor_sex
 as.numeric(factor_sex)
 ```
 
-## NSDUH
+## NSDUH --- strings
 
 ```{r}
 nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
@@ -125,6 +125,82 @@ table_marj =
   slice(-1) %>%
   as_tibble()
 ```
+
+
+```{r}
+data_marj = 
+  table_marj %>%
+  select(-contains("P Value")) %>% # get rid of some undisireble cols.
+  pivot_longer(
+    -State,
+    names_to = "age_year", 
+    values_to = "percent") %>%
+  separate(age_year, into = c("age", "year"), sep = "\\(") %>% # seperate "12+(2013-2014)" in to two cols.
+  mutate(
+    year = str_replace(year, "\\)", ""),
+    percent = str_replace(percent, "[a-c]$", ""), # remove letter at the end
+    percent = as.numeric(percent)) %>%
+  filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West"))) # don't want the state variable to be either "Total U.S.", "Northeast", "Midwest", "South", "West".
+```
+
+# NSDUH --- factors
+
+```{r}
+data_marj %>%
+  filter(age == "12-17") %>% 
+  mutate(State = fct_reorder(State, percent)) %>% # fct_reorder according to percent
+  # mutate(State = fct_relevel(State, "Texas")), make it a factor, and put texas first
+  ggplot(aes(x = State, y = percent, color = year)) + 
+    geom_point() + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) %>% 
+```
+
+## weather dataset
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USC00519397", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USC00519397 = "Waikiki_HA",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+```{r}
+weather_df %>%
+  mutate(name = forcats::fct_relevel(name, c("Waikiki_HA", "CentralPark_NY", "Waterhole_WA"))) %>% 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+```
+
+```{r}
+weather_df %>%
+  mutate(name = forcats::fct_reorder(name, tmax)) %>% 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+```
+
+
+```{r}
+weather_df %>%
+  lm(tmax ~ name, data = .) # outcome, predictor, data is weather_df
+
+weather_df %>%
+  mutate(name = forcats::fct_relevel(name, c("Waikiki_HA", "CentralPark_NY", "Waterhole_WA"))) %>% 
+  lm(tmax ~ name, data = .)
+```
+
 
 
 
